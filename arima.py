@@ -33,7 +33,6 @@ def tavg():
     # update.save(os.path.join(base_arima_path, 'Tavg_ARIMA.pkl'))
     
     prediction = forecast.tolist() if hasattr(forecast, 'tolist') else forecast 
-    print(prediction)
     return prediction
   except Exception as e:
     return str(e), 500
