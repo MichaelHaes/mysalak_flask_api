@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from arima import tavg, information
+from arima import pred_result, information, tavg
 
 app = Flask(__name__)
 
@@ -10,11 +10,11 @@ def hello():
 
 @app.route('/info', methods=['GET'])
 def info():
-  return information()
+  return info()
 
-@app.route('/arima/tavg', methods=['POST'])
+@app.route('/arima', methods=['POST'])
 def predict_tavg():
-  return tavg()
+  return pred_result()
 
 if (__name__ == '__main__'):
   app.run()
