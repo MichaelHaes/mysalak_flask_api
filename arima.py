@@ -96,9 +96,3 @@ def lumen():
     return prediction
   except Exception as e:
     return str(e), 500
-  
-def information():
-  fitted_values = tavg_model.fittedvalues
-  # Convert index to string and then to dictionary
-  fitted_values_dict = {str(date): value for date, value in fitted_values.items()}
-  return jsonify(fitted_values_dict)

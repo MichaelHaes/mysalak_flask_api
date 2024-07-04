@@ -29,7 +29,6 @@ def pred_result_lstm():
       'RR': rr(),
       'Lumen': lumen()
     }
-  print(res)
   return res
 
 def tavg():
