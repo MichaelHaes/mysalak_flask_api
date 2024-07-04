@@ -9,7 +9,7 @@ rhavg_model = ARIMAResults.load(os.path.join(base_arima_path, 'RH_avg_ARIMA.pkl'
 precipitation_model = ARIMAResults.load(os.path.join(base_arima_path, 'RR_ARIMA.pkl'))
 luminosity_model = ARIMAResults.load(os.path.join(base_arima_path, 'Luminosity_ARIMA.pkl'))
 
-def pred_result():
+def pred_result_arima():
   res = {
       'Tavg': tavg(),
       'RH_avg': rh_avg(),

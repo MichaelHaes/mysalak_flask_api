@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
-from arima import pred_result, information
-from deeplearning import tavg
+from arima import pred_result_arima, information
+from deeplearning import pred_result_lstm
 
 app = Flask(__name__)
 
@@ -15,11 +15,11 @@ def info():
 
 @app.route('/arima', methods=['POST'])
 def predict_tavg():
-  return pred_result()
+  return pred_result_arima()
 
 @app.route('/lstm', methods=['POST'])
 def predict_lstm():
-  return tavg()
+  return pred_result_lstm()
 
 if (__name__ == '__main__'):
   app.run()
