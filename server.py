@@ -18,5 +18,4 @@ def predict_lstm():
   return pred_result_lstm()
 
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=8888)
-    serve(app, host='0.0.0.0', port=5000, url_scheme='https')
+    serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')

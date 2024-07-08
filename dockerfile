@@ -11,6 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# CMD ["python", "server.py"]
-CMD ["waitress-serve", "--host", "127.0.0.1", "server:app"]
+EXPOSE 8888
+
+CMD ["waitress-serve", "--host", "0.0.0.0", "--port", "8888", "server:app"]
+# CMD ["uvicorn", "server:asgi_app", "--host", "0.0.0.0", "--port", "8000"]
 
