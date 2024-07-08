@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request
 from arima import pred_result_arima
 from deeplearning import pred_result_lstm
+from waitress import serve
 
 app = Flask(__name__)
-
 
 @app.route('/', methods=['GET'])
 def hello():
@@ -17,5 +17,5 @@ def predict_tavg():
 def predict_lstm():
   return pred_result_lstm()
 
-if (__name__ == '__main__'):
-  app.run(host='0.0.0.0')
+if __name__ == '__main__':
+    serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')
