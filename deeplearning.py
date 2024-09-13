@@ -34,43 +34,67 @@ def pred_result_lstm():
 def tavg():
   try:
     new_val = request.json
+    prediction = []
     
     inp = normalize(new_val['tavg'], minTavg, maxTavg)
     temp = tf.reshape(inp, [1, 1, 1])
-    result = denormalize(tavg_model.predict(temp), minTavg, maxTavg).tolist()
-    return result
+    
+    for i in range(7):
+      result = tavg_model.predict(temp)
+      prediction.append(denormalize(result, minTavg, maxTavg).item())
+      temp = np.reshape(result, (1, 1, 1))
+    
+    return prediction
   except Exception as e:
     return str(e), 500
 
 def rh_avg():
   try:
     new_val = request.json
+    prediction = []
     
     inp = normalize(new_val['rh_avg'], minRH_avg, maxRH_avg)
     humid = tf.reshape(inp, [1, 1, 1])
-    result = denormalize(rhavg_model.predict(humid), minRH_avg, maxRH_avg).tolist()
-    return result
+    
+    for i in range(7):
+      result = rhavg_model.predict(humid)
+      prediction.append(denormalize(result, minRH_avg, maxRH_avg).item())
+      humid = np.reshape(result, (1, 1, 1))
+    
+    return prediction
   except Exception as e:
     return str(e), 500
   
 def rr():
   try:
     new_val = request.json
+    prediction = []
     
     inp = normalize(new_val['rr'], minRR, maxRR)
     rr = tf.reshape(inp, [1, 1, 1])
-    result = denormalize(precipitation_model.predict(rr), minRR, maxRR).tolist()
-    return result
+    
+    for i in range(7):
+      result = precipitation_model.predict(rr)
+      prediction.append(denormalize(result, minRR, maxRR).item())
+      rr = np.reshape(result, (1, 1, 1))
+    
+    return prediction
   except Exception as e:
     return str(e), 500
   
 def lumen():
   try:
     new_val = request.json
+    prediction = []
     
     inp = normalize(new_val['lumen'], minLumen, maxLumen)
     lumen = tf.reshape(inp, [1, 1, 1])
-    result = denormalize(luminosity_model.predict(lumen), minLumen, maxLumen).tolist()
-    return result
+    
+    for i in range(7):
+      result = luminosity_model.predict(lumen)
+      prediction.append(denormalize(result, minLumen, maxLumen).item())
+      lumen = np.reshape(result, (1, 1, 1))
+    
+    return prediction
   except Exception as e:
     return str(e), 500
