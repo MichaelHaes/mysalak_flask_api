@@ -4,149 +4,188 @@ import onnxruntime as ort
 from PIL import Image
 import os
 import cv2
+import io
+import uuid
 
 # Add yolov5 to the Python path
-base_yolo_path = os.path.join(os.path.dirname(__file__), 'Model', 'Lalat', 'model_yolov5.onnx')
-ort_session = ort.InferenceSession(base_yolo_path)
+base_yolo_path = os.path.join(os.path.dirname(__file__), 'Model', 'Lalat', 'best.onnx')
+model = ort.InferenceSession(base_yolo_path)
 
-# Preprocess image
-def preprocess_image(image):
-    input_size = (640, 640)  # Adjust to your model's input size
-    image = cv2.resize(image, input_size)
-    image = image / 255.0  # Normalize the pixel values
-    image = np.transpose(image, (2, 0, 1))  # Change to (channels, height, width)
-    image = np.expand_dims(image, axis=0)  # Add batch dimension
-    image = image.astype(np.float32)
-    return image
+def preprocess_image(image_path, input_size=(640, 640)):
+    img = cv2.imread(image_path)
+    img_resized = cv2.resize(img, input_size)
+    img_transposed = np.transpose(img_resized, (2, 0, 1))  # HWC to CHW
+    img_normalized = img_transposed / 255.0  # Normalize to [0, 1]
+    img_batch = np.expand_dims(img_normalized, axis=0).astype(np.float32)
+    return img_batch, img
 
-# Define function to post-process YOLOv5 predictions
-def postprocess_predictions(predictions, confidence_threshold=0.5, iou_threshold=0.5):
-    # This part requires parsing of the YOLOv5 ONNX output
-    # Parse output format, typically contains bounding boxes, objectness score, and class probabilities
-    predictions = np.squeeze(predictions[0])  # Remove batch dimension
-
-    boxes, scores, classes = [], [], []  # Dummy data, replace with actual post-processing logic
-    for pred in predictions:
-        if pred[4] > confidence_threshold:  # Check objectness score
-            box = pred[:4]  # Extract bounding box
-            score = pred[4]  # Extract confidence score
-            class_id = np.argmax(pred[5:])  # Get the class with highest score
-            boxes.append(box)
-            scores.append(score)
-            classes.append(class_id)
-    
-    return boxes, scores, classes
-
-# # API endpoint for object detection
-def detect_lalat():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
-    
-    file = request.files['image']
-    image = Image.open(file.stream)
+def preprocess_image_in_memory(image_data, input_size=(640, 640)):
+    # Load image from memory
+    image = Image.open(io.BytesIO(image_data))
     image = np.array(image)
     
-    print(file)
+    # Resize while keeping the aspect ratio
+    img_resized = cv2.resize(image, input_size, interpolation=cv2.INTER_LINEAR)
+    img_transposed = np.transpose(img_resized, (2, 0, 1))  # HWC to CHW
+    img_normalized = img_transposed / 255.0  # Normalize to [0, 1]
+    img_batch = np.expand_dims(img_normalized, axis=0).astype(np.float32)
+    return img_batch
 
-    # Preprocess the image
-    input_image = preprocess_image(image)
 
-    # Run ONNX model inference
-    ort_inputs = {ort_session.get_inputs()[0].name: input_image}
-    ort_outs = ort_session.run(None, ort_inputs)
+
+# Postprocess the output
+# def postprocess_output(output, original_img, conf_threshold=0.5):
+#     # Assuming the model's output follows the YOLO format (i.e., [x, y, w, h, conf, ...])
+#     predictions = []
+#     for det in output[0]:
+#         conf = det[4]
+#         if conf > conf_threshold:
+#             x, y, w, h = det[:4]
+#             predictions.append((x, y, w, h, conf))
+#             # Draw bounding boxes
+#             start_point = (int(x - w / 2), int(y - h / 2))
+#             end_point = (int(x + w / 2), int(y + h / 2))
+#             cv2.rectangle(original_img, start_point, end_point, (255, 0, 0), 2)
+#     return original_img, predictions
+
+def postprocess_output(output, original_img, conf_threshold=0.98, iou_threshold=0.1):
+    # Reshape the output to get the expected format (8400, 6)
+    output = output[0].reshape(-1, 6)  # Now the shape is (8400, 6)
     
-    # print(ort_outs)
+    h, w, _ = original_img.shape  # Get the original image dimensions
+    boxes = []
+    confidences = []
+
+    for det in output:
+        conf = det[4]  # Assuming the confidence score is the 5th element
+        if conf > conf_threshold:  # Filter out low-confidence detections
+            # Extract bounding box coordinates (assumed order: [x_center, y_center, width, height])
+            x_center, y_center, box_width, box_height = det[:4]
+            
+            # Scale to original image dimensions (YOLO outputs are typically normalized)
+            x_center *= w
+            y_center *= h
+            box_width *= w
+            box_height *= h
+            
+            # Convert center coordinates to top-left and bottom-right corner coordinates
+            x1 = int(x_center - box_width / 2)
+            y1 = int(y_center - box_height / 2)
+            boxes.append([x1, y1, int(box_width), int(box_height)])
+            confidences.append(float(conf))
+
+    # Apply non-max suppression to avoid overlapping boxes
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, iou_threshold)
+
+    # Handle both cases: NMS returning list of lists or simple list
+    if len(indices) > 0 and isinstance(indices[0], list):
+        indices = [i[0] for i in indices]
+
+    # Draw bounding boxes and count objects
+    predictions = len(indices)
+    for i in indices:
+        box = boxes[i]
+        x1, y1, box_width, box_height = box
+        cv2.rectangle(original_img, (x1, y1), (x1 + box_width, y1 + box_height), (255, 0, 0), 2)
+
+    return predictions, original_img
+
+
+# Perform inference
+def run_inference(model, img_batch):
+    input_name = model.get_inputs()[0].name
+    output_name = model.get_outputs()[0].name
+    outputs = model.run([output_name], {input_name: img_batch})
     
-    for output in ort_outs:
-        print(output.shape)
+    print(f"Model output type: {type(outputs)}")
+    print(f"Model output shape: {outputs[0].shape if isinstance(outputs[0], np.ndarray) else outputs[0]}")
 
-    # Post-process the predictions
-    boxes, scores, classes = postprocess_predictions(ort_outs)
+    return outputs
 
-    # Return the results as JSON
-    result = {
-        'boxes': boxes,
-        'scores': scores,
-        'classes': classes
-    }
+def letterbox_image(image, size=(640, 640)):
+    h, w, _ = image.shape
+    scale = min(size[0] / h, size[1] / w)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    resized_image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
     
-    return jsonify(result)
-    # return jsonify({'jumlah': len(boxes)})
+    # Create a blank image and paste the resized image into it (with padding)
+    new_image = np.full((size[1], size[0], 3), 128, dtype=np.uint8)  # Fills the image with grey
+    new_image[(size[1] - new_h) // 2:(size[1] - new_h) // 2 + new_h,
+              (size[0] - new_w) // 2:(size[0] - new_w) // 2 + new_w] = resized_image
+    return new_image
 
-# def process_outputs(outputs):
-#     detections = []
-#     for output in outputs:
-#         batch_size, num_anchors, height, width, num_classes = output.shape
-#         # Flattening output to simplify processing
-#         output = output.reshape((batch_size, num_anchors, -1))  # Reshape to (batch_size, num_anchors, num_predictions)
-        
-#         for anchor in range(num_anchors):
-#             for i in range(height):
-#                 for j in range(width):
-#                     prediction = output[0, anchor, i * width + j]
-#                     bbox = prediction[:4]
-#                     objectness = prediction[4]
-#                     class_scores = prediction[5:]
-
-#                     # Apply sigmoid activation
-#                     objectness = 1 / (1 + np.exp(-objectness))
-#                     class_scores = 1 / (1 + np.exp(-class_scores))
-
-#                     # Compute confidence scores
-#                     confidence_scores = objectness * class_scores
-
-#                     # Filter by confidence threshold (e.g., 0.5)
-#                     if np.max(confidence_scores) > 0.5:
-#                         detected_class = np.argmax(confidence_scores)
-#                         detections.append({
-#                             'bbox': bbox,
-#                             'confidence': np.max(confidence_scores),
-#                             'class': detected_class
-#                         })
-
-#     return detections
-
-# def apply_nms(detections, iou_threshold=0.4):
-#     boxes = []
-#     confidences = []
-#     class_ids = []
-
-#     for detection in detections:
-#         bbox = detection['bbox']
-#         x_center, y_center, width, height = bbox
-#         x_center = int(x_center * 640)  # Adjust to original image size
-#         y_center = int(y_center * 640)
-#         width = int(width * 640)
-#         height = int(height * 640)
-#         boxes.append([x_center - width / 2, y_center - height / 2, width, height])
-#         confidences.append(detection['confidence'])
-#         class_ids.append(detection['class'])
-
-#     indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold=0.5, nms_threshold=iou_threshold)
-#     final_detections = [detections[i] for i in indices.flatten()]
-#     return final_detections
-
+# # API endpoint for object detection
 # def detect_lalat():
 #     if 'image' not in request.files:
-#         return jsonify({'error': 'No image provided'}), 400
-    
-#     file = request.files['image']
-#     image = Image.open(file.stream)
-#     image = np.array(image)
+#         return jsonify({"error": "No image uploaded"}), 400
 
-#     print(image.shape)
+#     file = request.files['image']
+#     img_path = os.path.join("uploads", file.filename)
+#     file.save(img_path)
 
 #     # Preprocess the image
-#     input_image = preprocess_image(image)
+#     img_batch, original_img = preprocess_image(img_path)
 
-#     # Run ONNX model inference
-#     ort_inputs = {ort_session.get_inputs()[0].name: input_image}
-#     ort_outs = ort_session.run(None, ort_inputs)
+#     # Run inference
+#     outputs = run_inference(model, img_batch)
 
-#     # Process model outputs
-#     detections = process_outputs(ort_outs)
-#     filtered_detections = apply_nms(detections)
+#     # Post-process and return results
+#     result_img, predictions = postprocess_output(outputs, original_img)
 
-#     num_detected_objects = len(filtered_detections)
+#     # Save and return the result image
+#     result_img_path = os.path.join("results", file.filename)
+#     cv2.imwrite(result_img_path, result_img)
 
-#     return jsonify({'num_detected_objects': num_detected_objects})
+#     return send_file(result_img_path, mimetype='image/jpeg')
+
+# def detect_lalat():    
+#     if 'image' not in request.files:
+#         return jsonify({"error": "No image uploaded"}), 400
+
+#     file = request.files['image']
+#     img_path = os.path.join("uploads", file.filename)
+#     file.save(img_path)
+
+#     # Preprocess the image
+#     img_batch, _ = preprocess_image(img_path)
+
+#     # Run inference
+#     outputs = run_inference(model, img_batch)
+
+#     # Post-process and return the number of detected objects
+#     num_detections = postprocess_output(outputs)
+
+#     return jsonify({"num_detections": num_detections})
+
+def detect_lalat():
+    if 'image' not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files['image']
+
+    # Read the image directly from memory
+    image_data = file.read()
+
+    # Preprocess the image in-memory
+    img_batch = preprocess_image_in_memory(image_data)
+    
+    # Convert the image back to a NumPy array for drawing bounding boxes
+    original_img = np.array(Image.open(io.BytesIO(image_data)))
+
+    # Run inference
+    outputs = run_inference(model, img_batch)
+
+    # Post-process and return the number of detected objects and the modified image
+    num_detections, processed_img = postprocess_output(outputs, original_img)
+
+    # Save the processed image with a unique name
+    output_filename = f"result_{uuid.uuid4()}.jpg"
+    output_path = os.path.join("results", output_filename)
+    cv2.imwrite(output_path, processed_img)
+
+    return jsonify({
+        "num_detections": num_detections,
+        "output_image": output_filename
+    })
+
