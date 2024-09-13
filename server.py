@@ -1,9 +1,12 @@
 from flask import Flask, jsonify, request
 from arima import pred_result_arima
 from deeplearning import pred_result_lstm
+from lalat import detect_lalat
 from waitress import serve
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/', methods=['GET'])
 def hello():
@@ -17,5 +20,10 @@ def predict_tavg():
 def predict_lstm():
   return pred_result_lstm()
 
+@app.route('/yolo', methods=['POST'])
+def predict_lalat():
+    return detect_lalat()
+
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')
+    # serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')
+    app.run(port=8888)
