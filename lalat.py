@@ -180,12 +180,12 @@ def detect_lalat():
     num_detections, processed_img = postprocess_output(outputs, original_img)
 
     # Save the processed image with a unique name
-    output_filename = f"result_{uuid.uuid4()}.jpg"
-    output_path = os.path.join("results", output_filename)
-    cv2.imwrite(output_path, processed_img)
+    # output_filename = f"result_{uuid.uuid4()}.jpg"
+    # output_path = os.path.join("results", output_filename)
+    # cv2.imwrite(output_path, processed_img)
 
     return jsonify({
-        "num_detections": num_detections,
-        "output_image": output_filename
+        "num_detections": num_detections
+        # "output_image": output_filename
     })
 
