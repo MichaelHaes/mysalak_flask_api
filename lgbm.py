@@ -21,19 +21,22 @@ def pred_result_lightgbm():
     'Luminosity': [new_val['lux']]
   })
   new_df.set_index('Tanggal', inplace=True)
+  new_df = new_df.resample('h').nearest()
+  one_week = pd.DataFrame({'Tanggal':pd.date_range(start=new_df.index[0], periods=24, freq='h')})
+  one_week.set_index('Tanggal', inplace=True)
+  print(one_week)
   
-  new_df["day_of_week"] = new_df.index.dayofweek
-  new_df["day_of_year"] = new_df.index.dayofyear
-  new_df["hour"] = new_df.index.hour
-  new_df["minutes"] = new_df.index.minute
-  new_df["day"] = new_df.index.day
-  new_df["month"] = new_df.index.month
-  new_df["quarter"] = new_df.index.quarter
-  new_df["year"] = new_df.index.year
+  one_week["day_of_week"] = one_week.index.dayofweek
+  one_week["day_of_year"] = one_week.index.dayofyear
+  one_week["hour"] = one_week.index.hour
+  one_week["minutes"] = one_week.index.minute
+  one_week["day"] = one_week.index.day
+  one_week["month"] = one_week.index.month
+  one_week["quarter"] = one_week.index.quarter
+  one_week["year"] = one_week.index.year
   
-  cols = [col for col in new_df.columns if col not in ['RH_avg', 'Temp', 'RR', 'Luminosity', 'Tanggal']]
-  print(cols)
-  X_test = new_df[cols]
+  cols = [col for col in one_week.columns if col not in ['RH_avg', 'Temp', 'RR', 'Luminosity', 'Tanggal']]
+  X_test = one_week[cols]
   
   res = {
       'Tavg': tavg(X_test),
