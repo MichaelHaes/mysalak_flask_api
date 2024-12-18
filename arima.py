@@ -14,89 +14,52 @@ luminosity_model = ARIMAResults.load(os.path.join(base_arima_path, 'lux_arima.pk
 # luminosity_model = ARIMAResults.load(os.path.join(base_arima_path, 'Luminosity_ARIMA.pkl'))
 
 def pred_result_arima():
+  new_val = request.json
+  end_date = pd.to_datetime(new_val['createdAt']) + pd.Timedelta(weeks=1)
+    
   res = {
-      'Tavg': tavg(),
-      'RH_avg': rh_avg(),
-      'RR': rr(),
-      'Lumen': lumen()
+      'temperature': tavg(end_date),
+      'humidity': rh_avg(end_date),
+      'precipitation': rr(end_date),
+      'luminosity': lumen(end_date)
     }
   return res
   
-def tavg():
+def tavg(end_date):
   try:
-    new_val = request.json
-    
-    new = pd.DataFrame({
-      'Tanggal': [pd.to_datetime(new_val['date'])],
-      'Tavg': [new_val['tavg']]
-    })
-    new.set_index('Tanggal', inplace=True)
-    
-    # update = tavg_model.append(new)
-    forecast = tavg_model.forecast(1)
-    # update.save(os.path.join(base_arima_path, 'Tavg_ARIMA.pkl'))
+    forecast = tavg_model.forecast(steps=end_date)
     
     prediction = forecast.tolist() if hasattr(forecast, 'tolist') else forecast 
-    return prediction
+    return prediction[-168:]
   except Exception as e:
     return str(e), 500
   
   
-def rh_avg():
+def rh_avg(end_date):
   try:
-    new_val = request.json
-    
-    new = pd.DataFrame({
-      'Tanggal': [pd.to_datetime(new_val['date'])],
-      'RH_avg': [new_val['rh_avg']]
-    })
-    new.set_index('Tanggal', inplace=True)
-    
-    # update = tavg_model.append(new)
-    forecast = rhavg_model.forecast(1)
-    # update.save(os.path.join(base_arima_path, 'RH_avg_ARIMA.pkl'))
+    forecast = rhavg_model.forecast(steps=end_date)
     
     prediction = forecast.tolist() if hasattr(forecast, 'tolist') else forecast 
-    return prediction
+    return prediction[-168:]
   except Exception as e:
     return str(e), 500
   
   
-def rr():
+def rr(end_date):
   try:
-    new_val = request.json
-    
-    new = pd.DataFrame({
-      'Tanggal': [pd.to_datetime(new_val['date'])],
-      'RR': [new_val['rr']]
-    })
-    new.set_index('Tanggal', inplace=True)
-    
-    # update = tavg_model.append(new)
-    forecast = precipitation_model.forecast(1)
-    # update.save(os.path.join(base_arima_path, 'RR_ARIMA.pkl'))
+    forecast = precipitation_model.forecast(steps=end_date)
     
     prediction = forecast.tolist() if hasattr(forecast, 'tolist') else forecast 
-    return prediction
+    return prediction[-168:]
   except Exception as e:
     return str(e), 500
   
   
-def lumen():
+def lumen(end_date):
   try:
-    new_val = request.json
-    
-    new = pd.DataFrame({
-      'Tanggal': [pd.to_datetime(new_val['date'])],
-      'Luminosity': [new_val['lumen']]
-    })
-    new.set_index('Tanggal', inplace=True)
-    
-    # update = tavg_model.append(new)
-    forecast = luminosity_model.forecast(1)
-    # update.save(os.path.join(base_arima_path, 'Luminosity_ARIMA.pkl'))
+    forecast = luminosity_model.forecast(steps=end_date)
     
     prediction = forecast.tolist() if hasattr(forecast, 'tolist') else forecast 
-    return prediction
+    return prediction[-168:]
   except Exception as e:
     return str(e), 500

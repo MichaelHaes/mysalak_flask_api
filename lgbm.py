@@ -24,7 +24,6 @@ def pred_result_lightgbm():
   new_df = new_df.resample('h').nearest()
   one_week = pd.DataFrame({'Tanggal':pd.date_range(start=new_df.index[0], periods=24, freq='h')})
   one_week.set_index('Tanggal', inplace=True)
-  print(one_week)
   
   one_week["day_of_week"] = one_week.index.dayofweek
   one_week["day_of_year"] = one_week.index.dayofyear
@@ -39,10 +38,11 @@ def pred_result_lightgbm():
   X_test = one_week[cols]
   
   res = {
-      'Tavg': tavg(X_test),
-      'RH_avg': rh_avg(X_test),
-      'RR': rr(X_test),
-      'Lumen': lumen(X_test)
+      'date': pd.date_range(start=new_df.index[0], periods=24, freq='h').strftime('%Y-%m-%d %H:%M:%S'),
+      'temperature': tavg(X_test),
+      'humidity': rh_avg(X_test),
+      'precipitation': rr(X_test),
+      'luminosity': lumen(X_test)
     }
   data_serializable = {key: value.tolist() for key, value in res.items()}
   print(json.dumps(data_serializable))
