@@ -1,16 +1,21 @@
 from flask import jsonify, request
-import lightgbm as lgb
+import xgboost as xgb
 import os, pandas as pd
 import json
 
-base_path = os.path.join(os.path.dirname(__file__), 'Model', 'LightGBM')
+base_path = os.path.join(os.path.dirname(__file__), 'Model', 'XGBoost')
 
-temperature_model = lgb.Booster(model_file=os.path.join(base_path, 'temp_lgbm.txt'))
-humidity_model = lgb.Booster(model_file=os.path.join(base_path, 'humidity_lgbm.txt'))
-precipitation_model = lgb.Booster(model_file=os.path.join(base_path, 'precip_lgbm.txt'))
-luminosity_model = lgb.Booster(model_file=os.path.join(base_path, 'lux_lgbm.txt'))
+booster = xgb.Booster()
+booster.load_model(os.path.join(base_path, 'temp_xgboost.json'))
+temperature_model = xgb.XGBRegressor()
+temperature_model._booster = booster
 
-def pred_result_lightgbm():
+# temperature_model = xgb.XGBRegressor().load_model(os.path.join(base_path, 'temp_xgboost.json'))
+humidity_model = xgb.XGBRegressor().load_model(os.path.join(base_path, 'humidity_xgboost.json'))
+precipitation_model = xgb.XGBRegressor().load_model(os.path.join(base_path, 'precip_xgboost.json'))
+luminosity_model = xgb.XGBRegressor().load_model(os.path.join(base_path, 'lux_xgboost.json'))
+
+def pred_result_xgboost():
   new_val = request.json
   
   new_df = pd.DataFrame({
@@ -44,7 +49,7 @@ def pred_result_lightgbm():
       'precipitation': tips(X_test),
       'luminosity': lux(X_test)
     }
-  print(res)
+  print(booster)
   data_serializable = {key: value.tolist() for key, value in res.items()}
   return json.dumps(data_serializable)
   
