@@ -14,11 +14,11 @@ def pred_result_lightgbm():
   new_val = request.json
   
   new_df = pd.DataFrame({
-    'Tanggal': [pd.to_datetime(new_val['createdAt'])],
-    'temperature': [new_val['temperature']],
-    'humidity': [new_val['humidity']],
-    'tips': [new_val['tips']],
-    'lux': [new_val['lux']]
+    'Tanggal': [pd.to_datetime(new_val['createdAt'])+pd.Timedelta(hours=1)],
+    # 'temperature': [new_val['temperature']],
+    # 'humidity': [new_val['humidity']],
+    # 'tips': [new_val['tips']],
+    # 'lux': [new_val['lux']]
   })
   new_df.set_index('Tanggal', inplace=True)
   new_df = new_df.resample('h').nearest()
@@ -38,13 +38,12 @@ def pred_result_lightgbm():
   X_test = one_week[cols]
   
   res = {
-      'date': pd.date_range(start=new_df.index[0], periods=24, freq='h').strftime('%Y-%m-%d %H:%M:%S'),
+      'date': pd.date_range(start=new_df.index[0], periods=168, freq='h').strftime('%Y-%m-%d %H:%M:%S'),
       'temperature': temperature(X_test),
       'humidity': humidity(X_test),
       'precipitation': tips(X_test),
       'luminosity': lux(X_test)
     }
-  print(res)
   data_serializable = {key: value.tolist() for key, value in res.items()}
   return json.dumps(data_serializable)
   
