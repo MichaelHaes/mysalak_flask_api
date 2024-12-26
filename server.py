@@ -15,7 +15,7 @@ def hello():
   return 'Hello, World!'
 
 @app.route('/arima', methods=['POST'])
-def predict_tavg():
+def predict_arima():
   return pred_result_arima()
 
 # @app.route('/lstm', methods=['POST'])
@@ -35,6 +35,5 @@ def predict_lalat():
     return detect_lalat()
 
 if __name__ == '__main__':
-    # serve(app, host='127.0.0.1', port=5000)
-    # serve(app, host='127.0.0.1', port=5000, threads=1, url_scheme='https')
+    # serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')
     app.run(port=8888)
