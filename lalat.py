@@ -9,19 +9,19 @@ from yolov5.detectModif import run
 base_yolo_path = os.path.join(os.path.dirname(__file__), 'Model', 'Lalat', 'yolov5_best.pt')
 
 def base64toimage(original):
-    print(original)
+    # print(original)
     image = base64.b64decode(original)
     return image
 
 def detect_lalat():
   file = request.json['image']
-  print(file)
+#   print(file)
 
   if "data:image" in file:
       base64_string = file.split(",")[1]
       file = base64toimage(base64_string)
   
-  print(file)
+#   print(file)
   
   # file.save(os.path.join("images", file.filename))
   if not os.path.exists('images'):
@@ -39,7 +39,7 @@ def detect_lalat():
   #                 "--save-conf"])
   # return result.stdout.decode('utf-8'), 200
   
-  detected = run(weights="./Model/Lalat/yolov5_best.pt", 
+  detected = run(weights="./Model/Lalat/best2.pt", 
                  source=os.path.join("images", 'image.jpg'), 
                  imgsz=(448,448), 
                  save_txt=False, 
@@ -50,6 +50,6 @@ def detect_lalat():
                  hide_labels=True, 
                  line_thickness=3)
   
-  print(detected)
+#   print(detected)
   
   return detected
