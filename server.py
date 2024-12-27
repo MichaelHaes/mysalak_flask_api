@@ -3,7 +3,7 @@ from arima import pred_result_arima
 from lgbm import pred_result_lightgbm
 # from xgbm import pred_result_xgboost
 # from deeplearning import pred_result_lstm
-from lalat import detect_lalat
+# from lalat import detect_lalat
 from waitress import serve
 from flask_cors import CORS
 
@@ -30,9 +30,9 @@ def predict_lightgbm():
 # def predict_xgboost():
 #   return pred_result_xgboost()
 
-@app.route('/yolo', methods=['POST'])
-def predict_lalat():
-    return detect_lalat()
+# @app.route('/yolo', methods=['POST'])
+# def predict_lalat():
+#     return detect_lalat()
 
 if __name__ == '__main__':
     # serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')

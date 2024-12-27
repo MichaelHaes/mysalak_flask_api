@@ -166,3 +166,5 @@ dockerfile
 # Model Folder
 Model/ARIMA
 Model/LightGBM
+
+images/
