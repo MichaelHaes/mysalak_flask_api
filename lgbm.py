@@ -22,7 +22,7 @@ def pred_result_lightgbm():
   })
   new_df.set_index('Tanggal', inplace=True)
   new_df = new_df.resample('h').nearest()
-  one_week = pd.DataFrame({'Tanggal':pd.date_range(start=new_df.index[0], periods=24, freq='h')})
+  one_week = pd.DataFrame({'Tanggal':pd.date_range(start=new_df.index[0], periods=168, freq='h')})
   one_week.set_index('Tanggal', inplace=True)
   
   one_week["day_of_week"] = one_week.index.dayofweek
