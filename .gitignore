@@ -168,3 +168,6 @@ Model/ARIMA
 Model/LightGBM
 
 images/
+
+yolov5/
+yolov5-mysalak/

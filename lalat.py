@@ -1,7 +1,7 @@
 from flask import request, jsonify
 import json
 import os
-from yolov5.detectModif import run
+# from yolov5.detectModif import run
 import base64
 import subprocess
 from PIL import Image
@@ -32,7 +32,7 @@ def detect_lalat():
 #   file_data = Image.open(image_path)
 #   print(file_data)
 
-  detected = subprocess.run(["python", "./yolov5/detectModif.py", 
+  detected = subprocess.run(["python", "./yolov5-mysalak/detectModif.py", 
                             "--weights", "./Model/Lalat/best.pt",
                             "--source", './images/image.jpg', 
                             "--save-txt",
