@@ -36,4 +36,4 @@ def predict_lalat():
 
 if __name__ == '__main__':
     # serve(app, host='0.0.0.0', port=8888, threads=1, url_scheme='https')
-    app.run(port=8888)
+    app.run(port=8888, threaded=True)
